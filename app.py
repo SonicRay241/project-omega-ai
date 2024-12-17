@@ -4,6 +4,7 @@ from dotenv import dotenv_values
 # base libraries
 import numpy as np
 import pandas as pd
+import math
 
 #For exporting model
 import pickle
@@ -39,9 +40,11 @@ with open(os.path.join(export_path,'SVR_Model.pkl'), 'rb') as f:
 def predict():
     if request.method == 'POST':
         demand_rate = request.json["demandRate"]
+        modal = request.json["basePrice"]
+        stock = request.json["stock"]
         key = request.json["secretKey"]
 
-        if not demand_rate or not key or key != env["SECRET_KEY"]:
+        if not demand_rate or not modal or not stock or not key or key != env["SECRET_KEY"]:
             return jsonify(
                 isError = True,
                 message = "Incomplete JSON",
@@ -49,10 +52,11 @@ def predict():
                 data = data
             ), 400
 
+        # SELECT AVG(Price) FROM ... WHERE category = {category}
         competitor_price = 40_000 # Average from db
-
-        scaled_modal = loaded_modal_scaler.transform([[20_000]]) # Fetch db
-        scaled_stock = loaded_stock_scaler.transform([[40]]) # Fetch db + demand
+        
+        scaled_modal = loaded_modal_scaler.transform([[float(modal)]]) # Fetch db
+        scaled_stock = loaded_stock_scaler.transform([[float(stock)]]) # Fetch db + demand
         scaled_demand_rate = loaded_demand_scaler.transform([[float(demand_rate)]]) # Demand
         scaled_competitor_price = loaded_competitor_scaler.transform([[competitor_price]]) # Average All Competitor
         profit_margin = [0.05] # 0-1, fetch db
@@ -70,12 +74,13 @@ def predict():
         final_price = (np.round(loaded_final_scaler.inverse_transform(prediction)[0])).item()
     
         return {
-            "finalPrice": final_price
+            "finalPrice": max(math.ceil(final_price/100) * 100, modal)
         }
-    else:
+    
+    else: # Method other than POST
         return jsonify(
             isError = False,
-            message = "Success",
+            message = "E",
             statusCode = 405,
             data = data
         ), 405
