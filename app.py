@@ -13,6 +13,7 @@ import os
 # Init
 env = dotenv_values(".env") # Load environment
 export_path = 'model'
+web_url = env["WEB_URL"]
 
 #scalers
 with open(os.path.join(export_path,'modal_scaler.pkl'), 'rb') as f:
@@ -40,9 +41,20 @@ with open(os.path.join(export_path,'SVR_Model.pkl'), 'rb') as f:
 def predict():
     if request.method == 'POST':
         demand_rate = request.json["demandRate"]
+        competitor_price = request.json["competitorPrice"] # Average from db
         modal = request.json["basePrice"]
-        stock = request.json["stock"]
+        
+        profit_margin = [0.05] # 0-1, fetch db
+        stock = 50
+        # stock = request.json["stock"]
+
         key = request.json["secretKey"]
+
+        print({
+            "demand": demand_rate,
+            "comp_price": competitor_price,
+            "modal": modal
+        })
 
         if not demand_rate or not modal or not stock or not key or key != env["SECRET_KEY"]:
             return jsonify(
@@ -52,14 +64,11 @@ def predict():
                 data = data
             ), 400
 
-        # SELECT AVG(Price) FROM ... WHERE category = {category}
-        competitor_price = 40_000 # Average from db
         
         scaled_modal = loaded_modal_scaler.transform([[float(modal)]]) # Fetch db
         scaled_stock = loaded_stock_scaler.transform([[float(stock)]]) # Fetch db + demand
         scaled_demand_rate = loaded_demand_scaler.transform([[float(demand_rate)]]) # Demand
         scaled_competitor_price = loaded_competitor_scaler.transform([[competitor_price]]) # Average All Competitor
-        profit_margin = [0.05] # 0-1, fetch db
 
         data = pd.DataFrame({
             "Modal": scaled_modal[0],
