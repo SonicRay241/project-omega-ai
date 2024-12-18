@@ -79,7 +79,7 @@ def predict():
         
         prediction = loaded_model.predict(data).reshape(-1,1)
 
-        final_price = (np.round(loaded_final_scaler.inverse_transform(prediction)[0])).item()
+        final_price = (loaded_final_scaler.inverse_transform(prediction)[0]).item()
     
         return {
             "finalPrice": max(math.ceil(final_price/100) * 100, modal)
