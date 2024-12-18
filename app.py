@@ -2,7 +2,6 @@ from flask import Flask, request, jsonify
 from dotenv import dotenv_values
 
 # base libraries
-import numpy as np
 import pandas as pd
 import math
 
